@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf with context %}
+{% block title %}{{ 'Edit Draft' if claim else 'New Claim' }}
+{% endblock %}
+{% block content %}
+{% set cashless = claim_type == 'cashless' %}
+<div class="page-head">
+  <div>
+    <h1>{{ 'Edit Draft ' ~ claim.code if claim else ('New Cashless Claim' if cashless else 'Submit New Claim') }}</h1>
+    <p>Fill in the details. Drafts are validated too, so errors are caught early.</p>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" novalidate id="claimForm">
+  {{ csrf() }}
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card-box">
+        <!-- <label class="form-label">Claim type</label>
+        <div class="d-flex gap-2 mb-3">
+          <span class="type-pill {{ 'on' if not cashless }}"><i
+              class="bi {{ 'bi-record-circle-fill text-primary' if not cashless else 'bi-circle text-muted' }}"></i>Reimbursement</span>
+          <span class="type-pill {{ 'on' if cashless }}"><i
+              class="bi {{ 'bi-record-circle-fill text-primary' if cashless else 'bi-circle text-muted' }}"></i>Cashless</span>
+        </div>
+        <div class="form-text mb-3">{{ 'Hospital Desk users create cashless claims.' if cashless else 'Policyholders
+          submit reimbursement claims.' }}</div> -->
+
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label" for="policy_code">Policy ID *</label>
+            <div class="input-group">
+              <input class="form-control" type="text" id="policy_code" name="policy_code"
+                     placeholder="Enter Policy ID (e.g. POL001)" value="{{ values.get('policy_code', '') }}"
+                     autocomplete="off" required>
+              <button class="btn btn-outline-primary" type="button" id="verifyPolicyBtn">Verify</button>
+            </div>
+            <input type="hidden" id="policy_id" name="policy_id" value="{{ values.get('policy_id', '') }}">
+            <div class="form-text">Enter the Policy ID printed on the policy document.</div>
+          </div>
+          <div class="col-md-6"><label class="form-label" for="member_id">Covered member *</label>
+            <select class="form-select" id="member_id" name="member_id" required disabled>
+              <option value="">Verify policy first</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <div class="form-text" id="policyHint"></div>
+          </div>
+          <div class="col-md-6"><label class="form-label" for="hospital_id">Hospital *</label>
+            <select class="form-select" id="hospital_id" name="hospital_id" required>
+              {% if not cashless %}<option value="">Select hospital</option>{% endif %}
+              {% for h in hospitals %}<option value="{{ h.id }}" {{ 'selected' if values.get('hospital_id')==h.id|string
+                or cashless }}>{{ h.name }} — {{ h.city }}{{ '' if h.is_network else ' (non-network)' }}</option>{%
+              endfor %}</select>
+          </div>
+          <div class="col-md-6"><label class="form-label" for="treatment_type">Treatment type *</label>
+            <select class="form-select" id="treatment_type" name="treatment_type" required disabled>
+              <option value="">Verify policy first</option>
+            </select>
+          </div>
+          <div class="col-md-4"><label class="form-label" for="admission_date">Admission date *</label>
+            <input class="form-control" type="date" id="admission_date" name="admission_date"
+              value="{{ values.get('admission_date', '') }}" required>
+          </div>
+          <div class="col-md-4"><label class="form-label" for="discharge_date">Discharge date *</label>
+            <input class="form-control" type="date" id="discharge_date" name="discharge_date"
+              value="{{ values.get('discharge_date', '') }}" required>
+          </div>
+          <div class="col-md-4"><label class="form-label" for="requested_amount">Requested amount (₹) *</label>
+            <input class="form-control" type="number" step="0.01" min="0.01" id="requested_amount"
+              name="requested_amount" value="{{ values.get('requested_amount', '') }}" placeholder="Enter amount"
+              required>
+          </div>
+          <div class="col-12"><label class="form-label" for="description">Treatment description</label>
+            <textarea class="form-control" rows="3" maxlength="1000" id="description" name="description"
+              placeholder="Brief description of the treatment">{{ values.get('description', '') }}</textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card-box">
+        <h6>Required supporting documents</h6>
+        <p class="small text-muted">Upload a real file for every required document. Accepted: PDF, PNG, JPG, JPEG; maximum 8 MB each.</p>
+        {% for d in document_types %}
+        <div class="mb-3"><label class="form-label" for="doc{{ loop.index }}">{{ d }} *</label>
+          <input class="form-control" type="file" name="file_{{ loop.index0 }}" id="doc{{ loop.index }}" accept=".pdf,.png,.jpg,.jpeg">
+        </div>
+        {% endfor %}
+        <hr>
+        <button class="btn btn-primary w-100 mb-2" name="action" value="submit"
+          onclick="return confirm('Submit this claim now?')">Submit Claim</button>
+        <button class="btn btn-outline-secondary w-100" name="action" value="draft">Save Draft</button>
+      </div>
+    </div>
+  </div>
+</form>
+<script>
+(() => {
+  const policyInput = document.getElementById('policy_code');
+  const policyIdInput = document.getElementById('policy_id');
+  const memberSelect = document.getElementById('member_id');
+  const treatmentSelect = document.getElementById('treatment_type');
+  const verifyButton = document.getElementById('verifyPolicyBtn');
+  const hint = document.getElementById('policyHint');
+  const savedMember = {{ values.get('member_id', '')|tojson }};
+  const savedTreatment = {{ values.get('treatment_type', '')|tojson }};
+  let verifiedCode = '';
+
+  async function verifyPolicy(showPopup = true) {
+    const code = policyInput.value.trim().toUpperCase();
+    policyInput.value = code;
+    policyIdInput.value = '';
+    memberSelect.innerHTML = '<option value="">Verify policy first</option>';
+    memberSelect.disabled = true;
+    treatmentSelect.innerHTML = '<option value="">Verify policy first</option>';
+    treatmentSelect.disabled = true;
+    hint.textContent = '';
+    verifiedCode = '';
+    if (!code) {
+      if (showPopup) alert('Please enter a Policy ID.');
+      return false;
+    }
+    verifyButton.disabled = true;
+    verifyButton.textContent = 'Checking...';
+    try {
+      const response = await fetch('{{ url_for("claims.policy_lookup", policy_code="POL000") }}'.replace('POL000', encodeURIComponent(code)), {
+        headers: {'X-Requested-With': 'XMLHttpRequest'}
+      });
+      const result = await response.json();
+      if (!response.ok || !result.found) {
+        alert(result.message || 'Policy not found.');
+        hint.textContent = 'Policy not found. Check the Policy ID and try again.';
+        policyInput.focus();
+        return false;
+      }
+      policyIdInput.value = result.policy_id;
+      verifiedCode = code;
+      memberSelect.innerHTML = '<option value="">Select covered member</option>';
+      result.members.forEach(member => {
+        const option = document.createElement('option');
+        option.value = member.id;
+        option.textContent = `${member.name} (${member.relation})`;
+        if (String(member.id) === String(savedMember)) option.selected = true;
+        memberSelect.appendChild(option);
+      });
+      memberSelect.disabled = result.members.length === 0;
+
+      // Only show treatments covered by the plan attached to the verified policy.
+      treatmentSelect.innerHTML = '<option value="">Select covered treatment</option>';
+      (result.treatments || []).forEach(treatment => {
+        const option = document.createElement('option');
+        option.value = treatment;
+        option.textContent = treatment;
+        if (treatment === savedTreatment) option.selected = true;
+        treatmentSelect.appendChild(option);
+      });
+      treatmentSelect.disabled = (result.treatments || []).length === 0;
+      if (!(result.treatments || []).length) {
+        treatmentSelect.innerHTML = '<option value="">No covered treatments configured</option>';
+      }
+      hint.textContent = `${result.policy_code} · ${result.plan} verified. Select a covered member and treatment to continue.`;
+      if (showPopup) alert(result.message);
+      return true;
+    } catch (error) {
+      alert('Unable to check the policy right now. Please try again.');
+      return false;
+    } finally {
+      verifyButton.disabled = false;
+      verifyButton.textContent = 'Verify';
+    }
+  }
+  verifyButton.addEventListener('click', () => verifyPolicy(true));
+  policyInput.addEventListener('keydown', event => {
+    if (event.key === 'Enter') { event.preventDefault(); verifyPolicy(true); }
+  });
+  policyInput.addEventListener('input', () => {
+    if (policyInput.value.trim().toUpperCase() !== verifiedCode) {
+      policyIdInput.value = '';
+      memberSelect.disabled = true;
+      memberSelect.innerHTML = '<option value="">Verify policy first</option>';
+      treatmentSelect.disabled = true;
+      treatmentSelect.innerHTML = '<option value="">Verify policy first</option>';
+      hint.textContent = '';
+    }
+  });
+  document.getElementById('claimForm').addEventListener('submit', event => {
+    if (!policyIdInput.value || policyInput.value.trim().toUpperCase() !== verifiedCode) {
+      event.preventDefault();
+      alert('Please verify a valid Policy ID before continuing.');
+      policyInput.focus();
+    } else if (!memberSelect.value) {
+      event.preventDefault();
+      alert('Please select a covered member for this policy.');
+      memberSelect.focus();
+    }
+  });
+  if (policyInput.value.trim()) verifyPolicy(false);
+})();
+</script>
+{% endblock %}

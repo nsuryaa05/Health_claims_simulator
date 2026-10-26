@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Policy {{ policy.code }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Policy {{ policy.code }}</h1>
+    <p>{{ policy.plan.name }}</p>
+  </div>
+  <a class="btn btn-outline-secondary" href="{{ url_for('policies.my_policies') }}">Back</a>
+</div>
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card-box">
+      <h5>Policy & Plan</h5>
+      <div class="kv"><span>Status</span><span>{{ policy.status|title }}</span></div>
+      <div class="kv"><span>Policy period</span><span>{{ policy.start_date }} to {{ policy.end_date }}</span></div>
+      <div class="kv"><span>Policy Amount limit</span><span>{{ policy.plan.annual_limit|inr }}</span></div>
+      <div class="kv"><span>Deductible</span><span>{{ policy.plan.deductible|inr }}</span></div>
+      <div class="kv"><span>Co-pay</span><span>{{ policy.plan.copay_percent|round|int }}%</span></div>
+      <div class="kv"><span>Claims on this policy</span><span>{{ claim_count }}</span></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card-box">
+      <h5>Covered Members</h5>
+      {% for m in policy.members %}<div class="kv"><span>{{ m.relation }}</span><span>{{ m.display_name }}</span></div>
+      {% endfor %}
+      <h6 class="mt-4">Covered treatments</h6>
+      {% for t in policy.plan.treatments %}<span class="badge status-submitted me-1 mb-1">{{ t }}</span>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge with context %}
+{% block title %}Activity Timeline · CareBridge{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Activity Timeline</h1><p>Recent claim status changes and audit events you are allowed to view.</p></div>
+</div>
+<div class="card-box">
+  {% if events %}
+  <div class="timeline-list">
+    {% for event in events %}
+    <div class="d-flex gap-3 pb-4 mb-3 border-bottom">
+      <div class="rounded-circle d-grid flex-shrink-0" style="place-items:center;width:42px;height:42px;background:#e1eeff;color:#1d4ed8;">
+        <i class="bi bi-clock-history"></i>
+      </div>
+      <div class="flex-grow-1">
+        <div class="d-flex flex-wrap justify-content-between gap-2">
+          <strong>Claim {{ event.claim.code }}</strong>
+          <small class="text-muted">{{ event.timestamp.strftime('%d %b %Y, %I:%M %p') if event.timestamp else 'Timestamp unavailable' }}</small>
+        </div>
+        <div class="mt-1">
+          {% if event.from_status %}{{ event.from_status|replace('_',' ')|title }}{% else %}Created{% endif %}
+          <i class="bi bi-arrow-right mx-1"></i>
+          {{ status_badge(event.to_status) }}
+        </div>
+        <p class="text-muted small mt-2 mb-1">{{ event.note or 'No additional note was recorded.' }}</p>
+        <span class="small">Action by: {{ event.actor.display_name if event.actor else 'System' }}</span>
+        <a class="small ms-2" href="{{ url_for('claims.detail', claim_id=event.claim_id) }}">Open claim</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state"><i class="bi bi-clock-history"></i>No activity is available for your account yet.</div>
+  {% endif %}
+</div>
+{% endblock %}

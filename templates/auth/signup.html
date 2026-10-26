@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Create account · Claims Simulator{% endblock %}
+{% block content %}
+{% from "_macros.html" import csrf with context %}
+<div class="auth-split">
+  <div class="auth-hero">
+    <div class="hero-icon"><i class="bi bi-person-heart"></i></div>
+    <h1>Join our Health Insurance Platform</h1>
+    <p class="fs-5">Manage your policies, submit claims and get the best support.</p>
+  </div>
+  <div class="auth-panel">
+    <form method="post" class="auth-card" novalidate>
+      {{ csrf() }}
+      <h2 class="h4 mb-1">Create account</h2>
+      <p class="text-muted small mb-3">Choose a demo role. After sign-up, you will open that role’s dashboard.</p>
+      <div class="mb-3"><label class="form-label" for="display_name">Full name</label>
+        <input class="form-control" id="display_name" name="display_name" value="{{ request.form.get('display_name','') }}" placeholder="Enter your full name" required></div>
+      <div class="mb-3"><label class="form-label" for="username">Username</label>
+        <input class="form-control" id="username" name="username" value="{{ request.form.get('username','') }}" placeholder="Choose a username" autocomplete="username" required>
+        <div class="form-text">Lowercase letters, numbers, underscore (3-30).</div></div>
+      <div class="row g-3 mb-3">
+        <div class="col-md-6"><label class="form-label" for="password">Password</label>
+          <input class="form-control" type="password" id="password" name="password" placeholder="Min 8 characters" autocomplete="new-password" required></div>
+        <div class="col-md-6"><label class="form-label" for="confirm_password">Confirm</label>
+          <input class="form-control" type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter" autocomplete="new-password" required></div>
+      </div>
+      <div class="mb-3"><label class="form-label" for="role">Choose your role</label>
+        <select class="form-select" id="role" name="role" required>
+          <option value="policyholder" {{ 'selected' if request.form.get('role', 'policyholder') == 'policyholder' }}>Policyholder</option>
+          <option value="hospital_desk" {{ 'selected' if request.form.get('role') == 'hospital_desk' }}>Hospital Desk</option>
+          <option value="claims_officer" {{ 'selected' if request.form.get('role') == 'claims_officer' }}>Claims Officer</option>
+          <option value="administrator" {{ 'selected' if request.form.get('role') == 'administrator' }}>Administrator</option>
+        </select>
+        <div class="form-text">Demo project only: the selected role is assigned to this account.</div></div>
+      <div class="mb-4" id="hospital-field" hidden>
+        <label class="form-label" for="hospital_id">Linked hospital</label>
+        <select class="form-select" id="hospital_id" name="hospital_id">
+          <option value="">Choose your hospital</option>
+          {% for hospital in hospitals %}
+          <option value="{{ hospital.id }}" {{ 'selected' if request.form.get('hospital_id') == hospital.id|string }}>{{ hospital.name }} — {{ hospital.city }}{% if not hospital.is_network %} (non-network){% endif %}</option>
+          {% endfor %}
+        </select>
+        <div class="form-text">Hospital Desk accounts are linked to one hospital.</div>
+      </div>
+      <div class="alert alert-warning small py-2 mb-3">
+        Classroom simulator only. In a real insurance application, administrator and staff roles must not be self-assigned.
+      </div>
+      <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          const roleSelect = document.getElementById("role");
+          const hospitalField = document.getElementById("hospital-field");
+          const hospitalSelect = document.getElementById("hospital_id");
+          function updateHospitalField() {
+            const showHospital = roleSelect.value === "hospital_desk";
+            hospitalField.hidden = !showHospital;
+            hospitalSelect.required = showHospital;
+          }
+          roleSelect.addEventListener("change", updateHospitalField);
+          updateHospitalField();
+        });
+      </script>
+      <button class="btn btn-primary w-100 py-2">Sign Up</button>
+      <p class="text-center small mt-3 mb-0">Already have an account? <a href="{{ url_for('auth.login') }}">Login</a></p>
+    </form>
+  </div>
+</div>
+{% endblock %}

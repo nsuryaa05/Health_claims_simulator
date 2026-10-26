@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, doc_badge, timeline, csrf with context %}
+{% block title %}Review {{ claim.code }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Review Claim – {{ claim.code }} {{ status_badge(claim.status) }}</h1>
+    <p>{{ claim.member.display_name }} · {{ claim.hospital.name }} · <span class="text-capitalize">{{ claim.claim_type
+        }}</span> · Requested {{ claim.requested_amount|inr }}</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="{{ url_for('officer.queue') }}">Back to queue</a>
+    <a class="btn btn-outline-primary" href="{{ url_for('claims.detail', claim_id=claim.id) }}">Full details</a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card-box h-100">
+      <h5>Policy Details</h5>
+      <div class="kv"><span>Policy ID</span><span>{{ claim.policy.code }}</span></div>
+      <div class="kv"><span>Plan</span><span>{{ claim.policy.plan.name }}</span></div>
+      <div class="kv"><span>Policy Amount Limit</span><span>{{ claim.policy.amount_limit|inr }}</span></div>
+      <div class="kv"><span>Remaining coverage</span><span>{{ coverage|inr }}</span></div>
+      <div class="kv"><span>Deductible / Co-pay</span><span>{{ claim.policy.plan.deductible|inr }} / {{
+          claim.policy.plan.copay_percent|round|int }}%</span></div>
+      <div class="kv"><span>Policyholder</span><span>{{ claim.policy.holder.display_name }}</span></div>
+      <div class="kv"><span>Member ID</span><span>{{ claim.member_id }} · {{ claim.member.display_name }}</span></div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card-box h-100">
+      <h5>Document Checklist</h5>
+      {% for d in claim.documents %}
+      <div class="border-bottom py-2">
+        <div class="kv"><span>{{ d.document_type }}</span><span>{{ doc_badge(d.checklist_status) }}</span></div>
+        {% for f in claim.files if f.document_id == d.id %}
+        <div class="small"><a href="{{ url_for('claims.view_file', file_id=f.id) }}" target="_blank">{{
+            f.original_filename }}</a> · v{{ f.version }} · {{ f.uploader.display_name }}</div>
+        {% endfor %}
+        {% if can_decide %}
+        <form method="post"
+          action="{{ url_for('claims.request_document_resend', claim_id=claim.id, document_id=d.id) }}" class="mt-2">{{
+          csrf() }}
+          <div class="input-group input-group-sm"><input class="form-control" name="reason"
+              placeholder="Reason to request resend" required><button class="btn btn-outline-warning">Request
+              Resend</button></div>
+        </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+      {% if can_decide %}<form method="post" action="{{ url_for('officer.verify_documents', claim_id=claim.id) }}"
+        class="mt-3">{{ csrf() }}
+        <button class="btn btn-sm btn-outline-success">Mark provided documents as verified</button>
+      </form>{% endif %}
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card-box h-100">
+      <h5>Decision</h5>
+      {% if claim.status == 'submitted' %}
+      <p class="text-muted">This claim is waiting for an officer.</p>
+      <form method="post" action="{{ url_for('officer.assign', claim_id=claim.id) }}"
+        data-confirm="Assign this claim to yourself?">{{ csrf() }}
+        <button class="btn btn-primary">Assign to me & start review</button>
+      </form>
+      {% elif can_decide %}
+      <form method="post" id="decisionForm" class="row g-2">{{ csrf() }}
+        <div class="col-12"><label class="form-label" for="eligible_amount">Eligible amount (₹) — max {{
+            claim.requested_amount|inr }}</label>
+          <input class="form-control" type="number" step="0.01" min="0.01" max="{{ claim.requested_amount }}"
+            id="eligible_amount" name="eligible_amount" value="{{ claim.requested_amount }}">
+        </div>
+        <div class="col-12"><label class="form-label" for="reason">Reason / note *</label>
+          <textarea class="form-control" id="reason" name="reason" rows="3" maxlength="500"
+            placeholder="Required for every decision"></textarea>
+        </div>
+        <div class="col-12 d-flex flex-wrap gap-2 mt-2">
+          <button class="btn btn-warning" formaction="{{ url_for('officer.request_info', claim_id=claim.id) }}"
+            onclick="document.getElementById('noteField').value=document.getElementById('reason').value">Request More
+            Info</button>
+          <button class="btn btn-danger" formaction="{{ url_for('officer.reject', claim_id=claim.id) }}"
+            onclick="return confirm('Reject this claim?')">Reject</button>
+          <button class="btn btn-success" formaction="{{ url_for('officer.approve', claim_id=claim.id) }}"
+            onclick="return confirm('Approve this claim?')">Approve</button>
+        </div>
+        <input type="hidden" id="noteField" name="note">
+      </form>
+      {% else %}
+      <p class="text-muted mb-0">{% if claim.status == 'in_review' %}This claim is assigned to {{
+        claim.officer.display_name }}. Only the assigned officer can decide.
+        {% else %}No decision is possible while the claim is “{{ claim.status|replace('_',' ') }}”.{% endif %}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="card-box">
+      <h5>Claim History</h5>{{ timeline(claim) }}
+    </div>
+  </div>
+</div>
+{% endblock %}

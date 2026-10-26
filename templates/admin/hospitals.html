@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf with context %}
+{% block title %}Hospitals{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Hospital Management</h1><p>Fictional hospitals and network status</p></div></div>
+<form method="post" action="{{ url_for('admin.save_hospital') }}" class="card-box mb-4">{{ csrf() }}
+  <h5>Add hospital</h5>
+  <div class="row g-2">
+    <div class="col-md-4"><label class="form-label" for="h_name">Name</label><input class="form-control" id="h_name" name="name" required></div>
+    <div class="col-md-3"><label class="form-label" for="h_city">City</label><input class="form-control" id="h_city" name="city" required></div>
+    <div class="col-md-3"><label class="form-label" for="h_net">Network</label>
+      <select class="form-select" id="h_net" name="network_status"><option value="network">Network</option><option value="non_network">Non-network</option></select></div>
+    <div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary w-100">Add</button></div>
+  </div>
+</form>
+<div class="card-box"><div class="table-wrap"><table class="table table-modern">
+  <thead><tr><th>ID</th><th>Name</th><th>City</th><th>Network status</th><th></th></tr></thead><tbody>
+  {% for h in hospitals %}<tr>
+    <td>{{ h.id }}</td>
+    <td><input class="form-control form-control-sm" name="name" value="{{ h.name }}" form="hf{{ h.id }}" aria-label="Name"></td>
+    <td><input class="form-control form-control-sm" name="city" value="{{ h.city }}" form="hf{{ h.id }}" aria-label="City"></td>
+    <td><select class="form-select form-select-sm" name="network_status" form="hf{{ h.id }}" aria-label="Network status">
+      <option value="network" {{ 'selected' if h.is_network }}>Network</option><option value="non_network" {{ 'selected' if not h.is_network }}>Non-network</option></select></td>
+    <td class="text-end"><form id="hf{{ h.id }}" method="post" action="{{ url_for('admin.save_hospital') }}">{{ csrf() }}<input type="hidden" name="id" value="{{ h.id }}">
+      <button class="btn btn-sm btn-outline-primary">Save</button></form></td></tr>{% endfor %}
+  </tbody></table></div></div>
+{% endblock %}

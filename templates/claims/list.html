@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, page_links with context %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ title }}</h1><p>{{ pagination.total }} claim(s) found</p></div>
+  {% if mode in ('mine', 'hospital') %}<a class="btn btn-primary" href="{{ url_for('claims.new_claim') }}"><i class="bi bi-plus-lg me-1"></i>New Claim</a>{% endif %}</div>
+
+<form method="get" class="card-box mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-lg-4"><label class="form-label" for="q">Search</label>
+      <input class="form-control" id="q" name="q" value="{{ request.args.get('q', '') }}" placeholder="Claim ID (e.g. CLM002) or member name"></div>
+    <div class="col-6 col-lg-2"><label class="form-label" for="status">Status</label>
+      <select class="form-select" id="status" name="status"><option value="">All</option>
+        {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if request.args.get('status') == s }}>{{ s|replace('_',' ')|title }}</option>{% endfor %}</select></div>
+    <div class="col-6 col-lg-2"><label class="form-label" for="type">Type</label>
+      <select class="form-select" id="type" name="type"><option value="">All</option>
+        {% for t in claim_types %}<option value="{{ t }}" {{ 'selected' if request.args.get('type') == t }}>{{ t|title }}</option>{% endfor %}</select></div>
+    {% if mode != 'hospital' %}
+    <div class="col-lg-2"><label class="form-label" for="hospital">Hospital</label>
+      <select class="form-select" id="hospital" name="hospital"><option value="">All</option>
+        {% for h in hospitals %}<option value="{{ h.id }}" {{ 'selected' if request.args.get('hospital') == h.id|string }}>{{ h.name }}</option>{% endfor %}</select></div>
+    {% endif %}
+    <div class="col-lg-2 d-flex gap-2">
+      <button class="btn btn-primary flex-fill"><i class="bi bi-search me-1"></i>Search</button>
+      <a class="btn btn-outline-secondary flex-fill" href="{{ url_for(request.endpoint) }}">Reset</a></div>
+  </div>
+</form>
+
+<div class="card-box">
+{% if claims %}
+  <div class="table-wrap"><table class="table table-modern">
+    <thead><tr><th>Claim ID</th><th>Member</th><th>Policy</th><th>Hospital</th><th>Type</th><th>Admission</th>
+      <th class="text-end">Amount</th><th>Status</th>{% if mode == 'queue' %}<th>Assigned</th>{% endif %}<th class="text-end">Action</th></tr></thead>
+    <tbody>
+    {% for c in claims %}
+      <tr>
+        <td class="fw-semibold">{{ c.code }}</td><td>{{ c.member.display_name }}</td><td>{{ c.policy.code }}</td>
+        <td>{{ c.hospital.name }}</td><td class="text-capitalize">{{ c.claim_type }}</td>
+        <td>{{ c.admission_date.strftime('%d-%m-%Y') }}</td><td class="text-end">{{ c.requested_amount|inr }}</td>
+        <td>{{ status_badge(c.status) }}</td>
+        {% if mode == 'queue' %}<td>{{ c.officer.display_name if c.officer else 'Unassigned' }}</td>{% endif %}
+        <td class="text-end text-nowrap">
+          {% if mode == 'queue' %}
+            {% if c.status == 'submitted' %}
+              <form method="post" action="{{ url_for('officer.assign', claim_id=c.id) }}" class="d-inline" data-confirm="Assign {{ c.code }} to yourself and start the review?">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-primary">Assign</button></form>
+            {% else %}<a class="btn btn-sm btn-outline-primary" href="{{ url_for('officer.review', claim_id=c.id) }}">Review</a>{% endif %}
+          {% else %}
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('claims.detail', claim_id=c.id) }}">View</a>
+            {% if mode == 'hospital' and c.claim_type == 'cashless' and c.status in ('draft', 'more_info') %}
+              <a class="btn btn-sm btn-outline-success" href="{{ url_for('hospital.checklist', claim_id=c.id) }}">Checklist</a>{% endif %}
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <div class="d-flex justify-content-between align-items-center mt-3">
+    <small class="text-muted">Showing {{ pagination.first }}–{{ pagination.last }} of {{ pagination.total }}</small>
+    {{ page_links(pagination) }}
+  </div>
+{% else %}
+  <div class="empty-state"><i class="bi bi-search"></i>No claims match your search or filters.
+    <div class="mt-2"><a href="{{ url_for(request.endpoint) }}">Reset filters</a></div></div>
+{% endif %}
+</div>
+{% endblock %}

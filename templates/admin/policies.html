@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf with context %}
+{% block title %}Policy Management{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Policy Management</h1>
+    <p>Create an insurance policy and link it to a policyholder and covered member.</p>
+  </div>
+</div>
+<form method="post" action="{{ url_for('admin.create_policy') }}" class="card-box mb-4">{{ csrf() }}
+  <h5>Create policy</h5>
+  {% if not policyholders or not plans %}<div class="alert alert-warning">First create at least one Policyholder in
+    Users &amp; Roles and one Insurance Plan in Insurance Plans.</div>{% endif %}
+  <div class="row g-3">
+    <div class="col-md-4"><label class="form-label" for="holder_user_id">Policyholder *</label><select
+        class="form-select" id="holder_user_id" name="holder_user_id" required>
+        <option value="">Select policyholder</option>{% for u in policyholders %}<option value="{{ u.id }}">{{
+          u.display_name }} ({{ u.username }})</option>{% endfor %}
+      </select></div>
+    <div class="col-md-4"><label class="form-label" for="plan_id">Insurance plan *</label><select class="form-select"
+        id="plan_id" name="plan_id" required>
+        <option value="">Select plan</option>{% for p in plans %}<option value="{{ p.id }}">{{ p.name }} — limit {{
+          p.annual_limit|inr }}</option>{% endfor %}
+      </select></div>
+    <div class="col-md-4"><label class="form-label" for="policy_amount_limit">Policy Amount Limit (₹) *</label><input
+        class="form-control" type="number" min="1" step="0.01" name="policy_amount_limit" id="policy_amount_limit"
+        required placeholder="e.g. 500000"></div>
+    <div class="col-md-4"><label class="form-label" for="insurer_name">Insurance company</label><input
+        class="form-control" name="insurer_name" id="insurer_name" value="Demo Insurance Company"></div>
+    <div class="col-md-4"><label class="form-label" for="premium_amount">Premium amount (₹)</label><input
+        class="form-control" type="number" min="0" step="0.01" name="premium_amount" id="premium_amount" value="0">
+    </div>
+    <div class="col-md-4"><label class="form-label" for="waiting_period">Waiting period details</label><input
+        class="form-control" name="waiting_period" id="waiting_period" placeholder="e.g. 30 days"></div>
+    <div class="col-md-4"><label class="form-label" for="exclusions">Exclusions</label><input class="form-control"
+        name="exclusions" id="exclusions" placeholder="Non-covered treatments"></div>
+    <div class="col-md-4"><label class="form-label" for="cashless_details">Cashless details</label><input
+        class="form-control" name="cashless_details" id="cashless_details" placeholder="Network coverage details"></div>
+    <div class="col-12"><label class="form-label" for="terms_conditions">Terms and conditions</label><textarea
+        class="form-control" name="terms_conditions" id="terms_conditions" rows="2"></textarea></div>
+    <div class="col-md-4"><label class="form-label" for="member_name">Primary covered member name *</label><input
+        class="form-control" id="member_name" name="member_name" required placeholder="e.g. Ravi Kumar"></div>
+    <div class="col-md-3"><label class="form-label" for="relation">Relationship *</label><select class="form-select"
+        id="relation" name="relation" required>
+        <option value="">Select relationship</option>
+        <option>Self</option>
+        <option>Spouse</option>
+        <option>Child</option>
+        <option>Parent</option>
+        <option>Other</option>
+      </select></div>
+    <div class="col-md-3"><label class="form-label" for="start_date">Start date *</label><input class="form-control"
+        type="date" id="start_date" name="start_date" required></div>
+    <div class="col-md-3"><label class="form-label" for="end_date">End date *</label><input class="form-control"
+        type="date" id="end_date" name="end_date" required></div>
+    <div class="col-md-3 d-flex align-items-end"><button class="btn btn-primary w-100" {% if not policyholders or not
+        plans %}disabled{% endif %}>Create Policy</button></div>
+  </div>
+</form>
+<div class="card-box">
+  <h5>Existing policies</h5>
+  <div class="table-wrap">
+    <table class="table table-modern">
+      <thead>
+        <tr>
+          <th>Policy</th>
+          <th>Policyholder</th>
+          <th>Plan</th>
+          <th>Covered members</th>
+          <th>Policy amount</th>
+          <th>Remaining</th>
+          <th>Period</th>
+          <th>Status</th>
+          <th>Add member</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in policies %}<tr>
+          <td>{{ p.code }}</td>
+          <td>{{ p.holder.display_name }}</td>
+          <td>{{ p.plan.name }}</td>
+          <td>{% for m in p.members %}{{ m.display_name }} ({{ m.relation }}){% if not loop.last %}, {% endif %}{% else
+            %}—{% endfor %}</td>
+          <td>{{ p.amount_limit|inr }}</td>
+          <td>{{ p.remaining_coverage|inr }}</td>
+          <td>{{ p.start_date }} to {{ p.end_date }}</td>
+          <td><span class="badge text-bg-success">{{ p.status|title }}</span></td>
+          <td>
+            <form method="post" action="{{ url_for('admin.add_policy_member', policy_id=p.id) }}" class="d-flex gap-1">
+              {{ csrf() }}<input class="form-control form-control-sm" name="display_name" placeholder="Member name"
+                required><select class="form-select form-select-sm" name="relation">
+                <option>Spouse</option>
+                <option>Child</option>
+                <option>Parent</option>
+                <option>Self</option>
+                <option>Other</option>
+              </select><button class="btn btn-sm btn-outline-primary">Add</button></form>
+          </td>
+        </tr>{% else %}<tr>
+          <td colspan="9" class="text-muted">No policies created yet.</td>
+        </tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

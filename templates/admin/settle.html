@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, csrf with context %}
+{% block title %}Settlement {{ claim.code }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Record Settlement – {{ claim.code }} {{ status_badge(claim.status) }}</h1>
+    <p>Simulated payout (classroom formula)</p>
+  </div>
+  <a class="btn btn-outline-secondary" href="{{ url_for('admin.settlements') }}">Back</a>
+</div>
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card-box h-100">
+      <h5>Claim Summary</h5>
+      <div class="kv"><span>Claim ID</span><span>{{ claim.code }}</span></div>
+      <div class="kv"><span>Claim type</span><span class="text-capitalize">{{ claim.claim_type }}</span></div>
+      <div class="kv"><span>Member</span><span>{{ claim.member.display_name }}</span></div>
+      <div class="kv"><span>Approved eligible amount</span><span>{{ claim.eligible_amount|inr if claim.eligible_amount
+          is not none else '—' }}</span></div>
+      <div class="kv"><span>Deductible</span><span>{{ claim.policy.plan.deductible|inr }}</span></div>
+      <div class="kv"><span>Co-pay</span><span>{{ claim.policy.plan.copay_percent|round|int }}%</span></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-box h-100">
+      <h5>Payout Calculation</h5>
+      {% if payout %}
+      <p class="small text-muted mb-1">(eligible − deductible applied) × (1 − co-pay ÷ 100)</p>
+      <p class="mb-1">({{ payout.eligible|inr }} − {{ payout.deductible_applied|inr }}) × (1 − {{
+        payout.copay_percent|round|int }}%)</p>
+      <div class="display-6 fw-bold text-success">{{ payout.payout|inr }}</div>
+      {% else %}<p class="text-muted">No eligible amount yet.</p>{% endif %}
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-box h-100">
+      <h5>Settlement Details</h5>
+      <div class="kv"><span>Payee type</span><span class="text-capitalize">{{ 'hospital' if claim.claim_type ==
+          'cashless' else 'policyholder' }}</span></div>
+      {% if claim.settlement %}
+      <div class="kv"><span>Settlement amount</span><span>{{ claim.settlement.amount|inr }}</span></div>
+      <div class="kv"><span>Recorded by</span><span>{{ claim.settlement.recorder.display_name }}</span></div>
+      <div class="kv"><span>Date</span><span>{{ claim.settlement.recorded_at.strftime('%d-%m-%Y %H:%M') }}</span></div>
+      {% elif claim.status == 'approved' %}
+      <div class="kv"><span>Settlement amount</span><span>{{ payout.payout|inr }}</span></div>
+      <form method="post" action="{{ url_for('admin.record', claim_id=claim.id) }}" class="mt-3"
+        data-confirm="Record the simulated settlement for {{ claim.code }}? This cannot be undone.">{{ csrf() }}
+        <button class="btn btn-success w-100"><i class="bi bi-cash-coin me-1"></i>Record Settlement</button>
+      </form>
+      {% else %}<p class="text-muted mt-2 mb-0">Only approved claims can be settled (status: {{
+        claim.status|replace('_',' ') }}).</p>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

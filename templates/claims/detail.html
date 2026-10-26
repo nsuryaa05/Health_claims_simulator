@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, doc_badge, timeline, csrf with context %}
+{% block title %}Claim {{ claim.code }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Claim Details – {{ claim.code }} {{ status_badge(claim.status) }}</h1>
+    <p>{{ claim.member.display_name }} · {{ claim.hospital.name }} · <span class="text-capitalize">{{ claim.claim_type }}</span></p></div>
+  <div class="d-flex flex-wrap gap-2">
+    {% if can_edit %}
+      <a class="btn btn-outline-primary" href="{{ url_for('claims.edit_claim', claim_id=claim.id) }}"><i class="bi bi-pencil me-1"></i>Edit Draft</a>
+      <form method="post" action="{{ url_for('claims.submit', claim_id=claim.id) }}" data-confirm="Submit this claim now?">{{ csrf() }}
+        <button class="btn btn-primary"><i class="bi bi-send me-1"></i>Submit</button></form>
+    {% endif %}
+    {% if can_respond %}<a class="btn btn-warning" href="{{ url_for('claims.respond', claim_id=claim.id) }}"><i class="bi bi-reply me-1"></i>Respond to Request</a>{% endif %}
+    {% if g.user.role == 'claims_officer' %}<a class="btn btn-primary" href="{{ url_for('officer.review', claim_id=claim.id) }}">Open Review Page</a>{% endif %}
+    {% if g.user.role == 'administrator' and claim.status in ('approved', 'paid') %}<a class="btn btn-success" href="{{ url_for('admin.settle', claim_id=claim.id) }}">Settlement</a>{% endif %}
+  </div>
+</div>
+
+{% if claim.status == 'more_info' %}
+<div class="warn-box mb-3"><strong><i class="bi bi-exclamation-triangle me-1"></i>More information requested:</strong> {{ claim.last_note('more_info') }}</div>
+{% endif %}
+{% if duplicates %}
+<div class="warn-box mb-3"><strong><i class="bi bi-copy me-1"></i>Possible duplicate:</strong> similar claim(s) exist —
+  {% for d in duplicates %}<a href="{{ url_for('claims.detail', claim_id=d.id) }}">{{ d.code }}</a>{{ ', ' if not loop.last }}{% endfor %}. This is a warning only.</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-lg-6"><div class="card-box h-100"><h5>Claim Information</h5>
+    <div class="kv"><span>Claim ID</span><span>{{ claim.code }}</span></div>
+    <div class="kv"><span>Type</span><span class="text-capitalize">{{ claim.claim_type }}</span></div>
+    <div class="kv"><span>Policy</span><span>{{ claim.policy.code }}</span></div>
+    <div class="kv"><span>Member</span><span>{{ claim.member.display_name }} ({{ claim.member.relation }})</span></div>
+    <div class="kv"><span>Hospital</span><span>{{ claim.hospital.name }}</span></div>
+    <div class="kv"><span>Treatment</span><span>{{ claim.treatment_type }}</span></div>
+    <div class="kv"><span>Admission</span><span>{{ claim.admission_date.strftime('%d-%m-%Y') }}</span></div>
+    <div class="kv"><span>Discharge</span><span>{{ claim.discharge_date.strftime('%d-%m-%Y') }}</span></div>
+    <div class="kv"><span>Requested amount</span><span>{{ claim.requested_amount|inr }}</span></div>
+    <div class="kv"><span>Eligible amount</span><span>{{ claim.eligible_amount|inr if claim.eligible_amount is not none else '—' }}</span></div>
+    <div class="kv"><span>Created by</span><span>{{ claim.creator.display_name }}</span></div>
+    <div class="kv"><span>Claims officer</span><span>{{ claim.officer.display_name if claim.officer else 'Not assigned' }}</span></div>
+    <div class="kv"><span>Description</span><span>{{ claim.description or '—' }}</span></div>
+  </div></div>
+
+  <div class="col-lg-6"><div class="card-box h-100"><h5>Policy Details</h5>
+    <div class="kv"><span>Plan</span><span>{{ claim.policy.plan.name }}</span></div>
+    <div class="kv"><span>Policy status</span><span>{{ claim.policy.status|title }}</span></div>
+    <div class="kv"><span>Policy Amount Limit</span><span>{{ claim.policy.amount_limit|inr }}</span></div>
+    <div class="kv"><span>Available coverage</span><span>{{ coverage|inr }}</span></div>
+    <div class="kv"><span>Deductible</span><span>{{ claim.policy.plan.deductible|inr }}</span></div>
+    <div class="kv"><span>Co-pay</span><span>{{ claim.policy.plan.copay_percent|round|int }}%</span></div>
+
+  </div></div>
+
+  {% if claim.status in ('approved', 'rejected', 'paid') %}
+  <div class="col-12"><div class="card-box"><h5>Decision</h5>
+    <p class="mb-2">{{ status_badge('rejected' if claim.status == 'rejected' else 'approved') }}
+      <strong>Reason:</strong> {{ claim.last_note('rejected' if claim.status == 'rejected' else 'approved') }}</p>
+    {% if payout and claim.status != 'rejected' %}
+    <div class="row g-2 small">
+      <div class="col-6 col-md-3"><span class="text-muted">Eligible</span><br><strong>{{ payout.eligible|inr }}</strong></div>
+      <div class="col-6 col-md-3"><span class="text-muted">Deductible applied</span><br><strong>{{ payout.deductible_applied|inr }}</strong></div>
+      <div class="col-6 col-md-3"><span class="text-muted">Co-pay</span><br><strong>{{ payout.copay_percent|round|int }}%</strong></div>
+      <div class="col-6 col-md-3"><span class="text-muted">Simulated payout</span><br><strong class="text-success">{{ payout.payout|inr }}</strong></div>
+    </div>{% endif %}
+    {% if claim.settlement %}<hr><i class="bi bi-cash-coin text-success me-1"></i>Simulated settlement of <strong>{{ claim.settlement.amount|inr }}</strong>
+      paid to {{ claim.settlement.payee_type }} on {{ claim.settlement.recorded_at.strftime('%d %b %Y') }}.{% endif %}
+  </div></div>
+  {% endif %}
+
+  <div class="col-12"><div class="card-box"><h5>Document Checklist & Uploaded Files</h5>
+    {% for d in claim.documents %}
+      <div class="border-bottom py-3">
+        <div class="d-flex justify-content-between align-items-center"><strong>{{ d.document_type }}</strong>{{ doc_badge(d.checklist_status) }}</div>
+        {% for f in claim.files if f.document_id == d.id %}
+          <div class="small mt-2"><a href="{{ url_for('claims.view_file', file_id=f.id) }}" target="_blank">{{ f.original_filename }}</a>
+            · Version {{ f.version }} · {{ f.file_size }} bytes · Uploaded by {{ f.uploader.display_name }} · {{ f.created_at.strftime('%d %b %Y %H:%M') }}
+            · Policy {{ claim.policy.code }} · Member {{ claim.member_id }}</div>
+        {% endfor %}
+        {% if g.user.role in ('policyholder','hospital_desk') and claim.status == 'more_info' and d.resend_reason %}
+          <div class="alert alert-warning mt-2 mb-2">Replacement requested: {{ d.resend_reason }}</div>
+          <form method="post" enctype="multipart/form-data" action="{{ url_for('claims.upload_replacement', claim_id=claim.id, document_id=d.id) }}" class="d-flex gap-2">{{ csrf() }}
+            <input type="file" class="form-control" name="replacement_file" accept=".pdf,.png,.jpg,.jpeg" required><button class="btn btn-primary">Resend File</button>
+          </form>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div></div>
+  <div class="col-lg-6"><div class="card-box h-100"><h5>Timeline</h5>{{ timeline(claim) }}</div></div>
+</div>
+{% endblock %}

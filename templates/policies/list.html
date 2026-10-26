@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}My Policies{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>My Policies</h1>
+    <p>Your plans and covered members</p>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('claims.new_claim') }}"><i class="bi bi-plus-lg me-1"></i>New Claim</a>
+</div>
+<div class="row g-3">
+  {% for p in policies %}
+  <div class="col-lg-6">
+    <div class="card-box h-100">
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <div class="text-muted small">Policy ID: {{ p.code }}</div>
+          <h5 class="mb-0">{{ p.plan.name }}</h5>
+        </div>
+        <span class="badge {{ 'status-approved' if p.status == 'active' else 'status-draft' }}">{{ p.status|title
+          }}</span>
+      </div>
+      <div class="row g-2 small">
+        <div class="col-6">
+          <div class="text-muted">Start date</div><strong>{{ p.start_date.strftime('%d-%m-%Y') }}</strong>
+        </div>
+        <div class="col-6">
+          <div class="text-muted">End date</div><strong>{{ p.end_date.strftime('%d-%m-%Y') }}</strong>
+        </div>
+        <div class="col-4">
+          <div class="text-muted">Policy Amount limit</div><strong>{{ p.plan.annual_limit|inr }}</strong>
+        </div>
+        <div class="col-4">
+          <div class="text-muted">Deductible</div><strong>{{ p.plan.deductible|inr }}</strong>
+        </div>
+        <div class="col-4">
+          <div class="text-muted">Co-pay</div><strong>{{ p.plan.copay_percent|round|int }}%</strong>
+        </div>
+      </div>
+      <div class="mt-3 small text-muted"><i class="bi bi-people me-1"></i>{{ p.members|length }} covered member(s)</div>
+      <a class="btn btn-outline-primary btn-sm mt-3" href="{{ url_for('policies.detail', policy_id=p.id) }}">View
+        Details</a>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12">
+    <div class="card-box empty-state"><i class="bi bi-shield"></i>You have no policies yet.</div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

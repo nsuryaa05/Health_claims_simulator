@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Settlements{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Simulated Settlements</h1><p>Only approved claims can be settled</p></div></div>
+<div class="card-box mb-4"><h5>Approved claims waiting for settlement</h5>
+{% if waiting %}<div class="table-wrap"><table class="table table-modern">
+  <thead><tr><th>Claim</th><th>Member</th><th>Type</th><th class="text-end">Eligible</th><th></th></tr></thead><tbody>
+  {% for c in waiting %}<tr><td class="fw-semibold">{{ c.code }}</td><td>{{ c.member.display_name }}</td><td class="text-capitalize">{{ c.claim_type }}</td>
+    <td class="text-end">{{ c.eligible_amount|inr }}</td>
+    <td class="text-end"><a class="btn btn-sm btn-success" href="{{ url_for('admin.settle', claim_id=c.id) }}">Record settlement</a></td></tr>{% endfor %}
+  </tbody></table></div>
+{% else %}<div class="empty-state"><i class="bi bi-check2-all"></i>Nothing is waiting for settlement.</div>{% endif %}
+</div>
+<div class="card-box"><h5>Recorded settlements</h5>
+{% if done %}<div class="table-wrap"><table class="table table-modern">
+  <thead><tr><th>Claim</th><th>Payee</th><th class="text-end">Amount</th><th>Recorded by</th><th>Date</th></tr></thead><tbody>
+  {% for s in done %}<tr><td><a href="{{ url_for('admin.settle', claim_id=s.claim_id) }}">{{ s.claim.code }}</a></td><td class="text-capitalize">{{ s.payee_type }}</td>
+    <td class="text-end fw-semibold">{{ s.amount|inr }}</td><td>{{ s.recorder.display_name }}</td><td>{{ s.recorded_at.strftime('%d %b %Y') }}</td></tr>{% endfor %}
+  </tbody></table></div>
+{% else %}<div class="empty-state"><i class="bi bi-inbox"></i>No settlements recorded yet.</div>{% endif %}
+</div>
+{% endblock %}

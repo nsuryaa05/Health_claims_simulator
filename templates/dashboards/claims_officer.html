@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stat_card, claims_table with context %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Welcome, {{ g.user.display_name }}</h1><p>Claims Officer dashboard</p></div>
+  <a class="btn btn-primary" href="{{ url_for('officer.queue') }}"><i class="bi bi-inboxes me-1"></i>Open Review Queue</a>
+</div>
+<div class="row g-3 mb-4">
+  {{ stat_card("Unassigned Submitted", unassigned, "bi-inbox", "orange") }}
+  {{ stat_card("Assigned to Me", assigned, "bi-person-check", "blue") }}
+  {{ stat_card("In Review", in_review, "bi-hourglass-split", "purple") }}
+  {{ stat_card("Awaiting Info", more_info, "bi-question-circle", "orange") }}
+  {{ stat_card("Approved", approved, "bi-check-circle", "green") }}
+  {{ stat_card("Rejected", rejected, "bi-x-circle", "red") }}
+</div>
+<div class="card-box">
+  <div class="d-flex justify-content-between mb-2"><h5>Waiting for an Officer</h5>
+    <a href="{{ url_for('officer.queue', status='submitted') }}">Open filtered queue</a></div>
+  {% if recent %}
+  <div class="table-wrap"><table class="table table-modern">
+    <thead><tr><th>Claim ID</th><th>Member</th><th>Hospital</th><th>Type</th><th class="text-end">Amount</th><th></th></tr></thead>
+    <tbody>{% for c in recent %}
+      <tr><td class="fw-semibold">{{ c.code }}</td><td>{{ c.member.display_name }}</td><td>{{ c.hospital.name }}</td>
+        <td class="text-capitalize">{{ c.claim_type }}</td><td class="text-end">{{ c.requested_amount|inr }}</td>
+        <td class="text-end"><form method="post" action="{{ url_for('officer.assign', claim_id=c.id) }}" class="d-inline" data-confirm="Assign {{ c.code }} to yourself and start the review?">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-primary">Assign to me</button></form></td></tr>
+    {% endfor %}</tbody></table></div>
+  {% else %}<div class="empty-state"><i class="bi bi-emoji-smile"></i>The queue is empty. Great job!</div>{% endif %}
+</div>
+{% endblock %}

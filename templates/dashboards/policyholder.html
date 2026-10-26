@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stat_card, claims_table with context %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Welcome, {{ g.user.display_name }}</h1><p>Policyholder dashboard</p></div>
+  <a class="btn btn-primary" href="{{ url_for('claims.new_claim') }}"><i class="bi bi-plus-lg me-1"></i>New Claim</a>
+</div>
+<div class="row g-3 mb-4">
+  {{ stat_card("My Policies", policies, "bi-shield-check", "blue") }}
+  {{ stat_card("Total Claims", total, "bi-file-earmark-text", "green") }}
+  {{ stat_card("Under Review", in_review, "bi-hourglass-split", "orange") }}
+  {{ stat_card("Approved", approved, "bi-check-circle", "purple") }}
+  {{ stat_card("Rejected", rejected, "bi-x-circle", "red") }}
+</div>
+<div class="card-box">
+  <div class="d-flex justify-content-between mb-2"><h5>Recent Claim Activity</h5>
+    <a href="{{ url_for('claims.my_claims') }}">View all</a></div>
+  {{ claims_table(recent) }}
+</div>
+{% endblock %}

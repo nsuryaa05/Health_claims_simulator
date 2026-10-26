@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stat_card, claims_table with context %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Welcome, {{ g.user.hospital.name if g.user.hospital else g.user.display_name }}</h1><p>Hospital Desk dashboard</p></div>
+  <a class="btn btn-primary" href="{{ url_for('claims.new_claim') }}"><i class="bi bi-plus-lg me-1"></i>New Cashless Claim</a>
+</div>
+<div class="row g-3 mb-4">
+  {{ stat_card("Total Hospital Claims", total, "bi-hospital", "blue") }}
+  {{ stat_card("Submitted Cashless", submitted_cashless, "bi-send-check", "green") }}
+  {{ stat_card("Awaiting Information", more_info, "bi-question-circle", "orange") }}
+  {{ stat_card("Approved", approved, "bi-check-circle", "teal") }}
+</div>
+<div class="card-box">
+  <div class="d-flex justify-content-between mb-2"><h5>Recent Hospital Claims</h5>
+    <a href="{{ url_for('hospital.claims') }}">View all</a></div>
+  {{ claims_table(recent) }}
+</div>
+{% endblock %}

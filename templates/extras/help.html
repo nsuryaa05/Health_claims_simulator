@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Help Center · CareBridge{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Help Center</h1><p>Quick guidance for the {{ ROLE_LABELS[g.user.role] }} role.</p></div></div>
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card-box">
+      <h5><i class="bi bi-compass me-2 text-primary"></i>Your workflow</h5>
+      {% if g.user.role == 'policyholder' %}
+      <ol class="mb-0">
+        <li class="mb-2">Open <strong>My Policies</strong> and confirm your policy is active.</li>
+        <li class="mb-2">Choose <strong>New Claim</strong>, select a covered member, hospital and treatment.</li>
+        <li class="mb-2">Save a draft or submit when the required checklist items are provided.</li>
+        <li class="mb-2">Track progress in <strong>My Claims</strong>; respond if more information is requested.</li>
+        <li>Read the claim timeline to understand each recorded decision.</li>
+      </ol>
+      {% elif g.user.role == 'hospital_desk' %}
+      <ol class="mb-0">
+        <li class="mb-2">Create cashless claims only for your linked network hospital.</li>
+        <li class="mb-2">Select a valid policy and a member covered by that policy.</li>
+        <li class="mb-2">Update document checklist metadata and submit the claim.</li>
+        <li>Monitor the Hospital Claims page for requests and decisions.</li>
+      </ol>
+      {% elif g.user.role == 'claims_officer' %}
+      <ol class="mb-0">
+        <li class="mb-2">Open the Review Queue and select a submitted claim.</li>
+        <li class="mb-2">Assign the claim to yourself before starting review.</li>
+        <li class="mb-2">Check coverage and documents; request missing information when needed.</li>
+        <li>Approve with an eligible amount and reason, or reject with a clear reason.</li>
+      </ol>
+      {% else %}
+      <ol class="mb-0">
+        <li class="mb-2">Use Users &amp; Roles to create accounts and assign staff roles.</li>
+        <li class="mb-2">Maintain hospitals and fictional insurance plans.</li>
+        <li class="mb-2">Record settlement only after a claim is approved.</li>
+        <li>Use Reports to review counts and export the demo report.</li>
+      </ol>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card-box mb-3">
+      <h5><i class="bi bi-shield-check me-2 text-success"></i>Security reminders</h5>
+      <ul class="mb-0">
+        <li>Never share your password.</li>
+        <li>Only access records permitted for your role.</li>
+        <li>Staff roles are assigned by an administrator.</li>
+        <li>All information in this project is fictional.</li>
+      </ul>
+    </div>
+    <div class="card-box">
+      <h5><i class="bi bi-calculator me-2 text-primary"></i>Simulated payout</h5>
+      <p class="small mb-2">The classroom formula is:</p>
+      <code>(Eligible amount − applied deductible) × (1 − co-pay % ÷ 100)</code>
+      <p class="small text-muted mt-2 mb-0">This is a learning example, not an actual insurer decision or payment.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

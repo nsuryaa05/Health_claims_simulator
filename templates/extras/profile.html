@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf with context %}
+{% block title %}My Profile · CareBridge{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>My Profile</h1><p>Manage your account information and password.</p></div>
+  <span class="role-chip role-{{ g.user.role }}">{{ ROLE_LABELS[g.user.role] }}</span>
+</div>
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card-box h-100">
+      <div class="rounded-circle d-grid place-items-center mb-3" style="width:72px;height:72px;background:#e1eeff;color:#1d4ed8;font-size:1.8rem;">
+        <i class="bi bi-person-circle"></i>
+      </div>
+      <h4 class="mb-1">{{ g.user.display_name }}</h4>
+      <p class="text-muted mb-3">@{{ g.user.username }}</p>
+      <div class="mb-2"><span class="text-muted">Role</span><div class="fw-semibold">{{ ROLE_LABELS[g.user.role] }}</div></div>
+      {% if g.user.hospital %}<div><span class="text-muted">Linked hospital</span><div class="fw-semibold">{{ g.user.hospital.name }}</div></div>{% endif %}
+      <hr>
+      <p class="small text-muted mb-0">Your role permissions are assigned by the application and cannot be changed from this page.</p>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <form method="post" class="card-box">
+      {{ csrf() }}
+      <h5>Personal information</h5>
+      <div class="mb-4"><label class="form-label" for="display_name">Display name</label>
+        <input class="form-control" id="display_name" name="display_name" maxlength="100" value="{{ g.user.display_name }}" required></div>
+      <hr>
+      <h5 class="mt-3">Change password <span class="text-muted fw-normal small">(optional)</span></h5>
+      <p class="text-muted small">Leave all password fields empty if you do not want to change it.</p>
+      <div class="mb-3"><label class="form-label" for="current_password">Current password</label>
+        <input class="form-control" type="password" id="current_password" name="current_password" autocomplete="current-password"></div>
+      <div class="row g-3">
+        <div class="col-md-6"><label class="form-label" for="new_password">New password</label>
+          <input class="form-control" type="password" id="new_password" name="new_password" minlength="8" autocomplete="new-password"></div>
+        <div class="col-md-6"><label class="form-label" for="confirm_password">Confirm new password</label>
+          <input class="form-control" type="password" id="confirm_password" name="confirm_password" minlength="8" autocomplete="new-password"></div>
+      </div>
+      <button class="btn btn-primary mt-4"><i class="bi bi-check2-circle me-1"></i>Save changes</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

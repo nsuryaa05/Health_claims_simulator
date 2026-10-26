@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stat_card, bar_row with context %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Reports & Analytics</h1>
+    <p>Summary of all submitted claims</p>
+  </div>
+  <a class="btn btn-outline-primary" href="{{ url_for('reports.export_csv') }}"><i
+      class="bi bi-download me-1"></i>Export CSV</a>
+</div>
+<div class="row g-3 mb-4">
+  {{ stat_card("Total Claims", totals.total_claims, "bi-file-earmark-text", "blue") }}
+  {{ stat_card("Total Requested", totals.requested_total|inr, "bi-wallet2", "orange") }}
+  {{ stat_card("Total Eligible", totals.eligible_total|inr, "bi-check2-square", "teal") }}
+  {{ stat_card("Total Settlement", totals.settled_total|inr, "bi-cash-coin", "green") }}
+</div>
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card-box h-100">
+      <h5>Claims by Status</h5>
+      <div class="donut my-3" style="background: conic-gradient({{ gradient }})" data-total="{{ totals.total_claims }}"
+        role="img" aria-label="Doughnut chart of claims by status"></div>
+      {% for status, n in totals.by_status %}<div class="d-flex justify-content-between small mb-1">
+        <span><span class="legend-dot" style="background:{{ colors[status] }}"></span>{{ status|replace('_',' ')|title
+          }}</span><strong>{{ n }}</strong>
+      </div>{% endfor %}
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-box h-100">
+      <h5>Claims by Type</h5>
+      {% for name, n in by_type %}{{ bar_row(name|title, n, biggest) }}{% else %}<div class="empty-state">No data</div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-box h-100">
+      <h5>Claims by Hospital</h5>
+      {% for name, n in by_hospital %}{{ bar_row(name, n, biggest) }}{% else %}<div class="empty-state">No data</div>{%
+      endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

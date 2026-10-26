@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf with context %}
+{% block title %}Users & Roles{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>User & Role Management</h1><p>Only administrators can assign Hospital Desk, Claims Officer and Administrator roles</p></div></div>
+
+<form method="post" action="{{ url_for('admin.create_user') }}" class="card-box mb-4">{{ csrf() }}
+  <h5>Create user</h5>
+  <div class="row g-2">
+    <div class="col-md-3"><label class="form-label" for="n_name">Full name</label><input class="form-control" id="n_name" name="display_name" required></div>
+    <div class="col-md-2"><label class="form-label" for="n_user">Username</label><input class="form-control" id="n_user" name="username" required></div>
+    <div class="col-md-2"><label class="form-label" for="n_pass">Password</label><input class="form-control" type="password" id="n_pass" name="password" autocomplete="new-password" required></div>
+    <div class="col-md-2"><label class="form-label" for="n_role">Role</label>
+      <select class="form-select" id="n_role" name="role">{% for r in roles %}<option value="{{ r }}">{{ ROLE_LABELS[r] }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><label class="form-label" for="n_hosp">Hospital (desk only)</label>
+      <select class="form-select" id="n_hosp" name="hospital_id"><option value="">—</option>{% for h in hospitals %}<option value="{{ h.id }}">{{ h.name }}</option>{% endfor %}</select></div>
+    <div class="col-md-1 d-flex align-items-end"><button class="btn btn-primary w-100">Add</button></div>
+  </div>
+</form>
+
+<div class="card-box"><div class="table-wrap"><table class="table table-modern">
+  <thead><tr><th>ID</th><th>Name</th><th>Username</th><th>Role</th><th>Hospital</th><th></th></tr></thead>
+  <tbody>
+  {% for u in users %}
+    <tr>
+      <td>{{ u.id }}</td><td>{{ u.display_name }}</td><td>{{ u.username }}</td>
+      <td>{% if u.id == g.user.id %}<span class="role-chip role-{{ u.role }}">{{ ROLE_LABELS[u.role] }}</span>
+        {% else %}<select class="form-select form-select-sm" name="role" form="uf{{ u.id }}" aria-label="Role of {{ u.username }}">
+          {% for r in roles %}<option value="{{ r }}" {{ 'selected' if u.role == r }}>{{ ROLE_LABELS[r] }}</option>{% endfor %}</select>{% endif %}</td>
+      <td>{% if u.id != g.user.id %}<select class="form-select form-select-sm" name="hospital_id" form="uf{{ u.id }}" aria-label="Hospital of {{ u.username }}">
+          <option value="">—</option>{% for h in hospitals %}<option value="{{ h.id }}" {{ 'selected' if u.hospital_id == h.id }}>{{ h.name }}</option>{% endfor %}</select>
+        {% else %}—{% endif %}</td>
+      <td class="text-end">{% if u.id != g.user.id %}
+        <form id="uf{{ u.id }}" method="post" action="{{ url_for('admin.update_user', user_id=u.id) }}" data-confirm="Change the role of {{ u.username }}?">{{ csrf() }}
+          <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square me-1"></i>Save</button></form>
+        <form method="post" action="{{ url_for('admin.delete_user', user_id=u.id) }}" class="d-inline" data-confirm="Are you sure you want to remove user {{ u.username }}? This action cannot be undone.">{{ csrf() }}
+          <button type="submit" class="btn btn-sm btn-outline-danger mt-1"><i class="bi bi-trash me-1"></i>Remove</button>
+        </form>{% else %}<small class="text-muted">You</small>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody></table></div></div>
+{% endblock %}

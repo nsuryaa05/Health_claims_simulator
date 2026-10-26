@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stat_card, bar_row, status_badge with context %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Administrator Dashboard</h1><p>System summary</p></div>
+  <a class="btn btn-outline-primary" href="{{ url_for('reports.index') }}"><i class="bi bi-bar-chart-line me-1"></i>Full Reports</a>
+</div>
+<div class="row g-3 mb-3">
+  {{ stat_card("Total Users", users, "bi-people", "blue") }}
+  {{ stat_card("Total Policies", policies, "bi-shield-check", "green") }}
+  {{ stat_card("Total Claims", totals.total_claims, "bi-file-earmark-text", "purple") }}
+</div>
+<div class="row g-3 mb-4">
+  {{ stat_card("Requested Amount", totals.requested_total|inr, "bi-wallet2", "orange") }}
+  {{ stat_card("Eligible Amount", totals.eligible_total|inr, "bi-check2-square", "teal") }}
+  {{ stat_card("Simulated Settlement", totals.settled_total|inr, "bi-cash-coin", "green") }}
+</div>
+<div class="card-box" style="max-width:720px">
+  <h5>Claims by Status</h5>
+  {% for status, n in totals.by_status %}{{ bar_row(status|replace('_',' ')|title, n, max_count) }}{% endfor %}
+</div>
+{% endblock %}

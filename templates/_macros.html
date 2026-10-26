@@ -1,0 +1,72 @@
+{# Reusable pieces. Always import with:  {% from "_macros.html" import x with context %} #}
+
+{% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endmacro %}
+
+{% macro status_badge(status) %}
+<span class="badge status-{{ status }}">{{ status|replace('_', ' ')|title }}</span>
+{% endmacro %}
+
+{% macro doc_badge(status) %}
+<span class="badge doc-{{ status }} rounded-pill">{{ status|title }}</span>
+{% endmacro %}
+
+{% macro stat_card(label, value, icon, color) %}
+<div class="col-6 col-lg">
+  <div class="stat-card stat-{{ color }}">
+    <div class="icon"><i class="bi {{ icon }}"></i></div>
+    <div><div class="num">{{ value }}</div><div class="lbl">{{ label }}</div></div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro claims_table(claims, show_member=True) %}
+{% if claims %}
+<div class="table-wrap"><table class="table table-modern">
+  <thead><tr><th>Claim ID</th><th>Member</th><th>Hospital</th><th>Type</th><th>Status</th><th class="text-end">Amount</th><th></th></tr></thead>
+  <tbody>
+  {% for c in claims %}
+    <tr>
+      <td class="fw-semibold">{{ c.code }}</td><td>{{ c.member.display_name }}</td><td>{{ c.hospital.name }}</td>
+      <td class="text-capitalize">{{ c.claim_type }}</td><td>{{ status_badge(c.status) }}</td>
+      <td class="text-end">{{ c.requested_amount|inr }}</td>
+      <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{{ url_for('claims.detail', claim_id=c.id) }}">View</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}
+<div class="empty-state"><i class="bi bi-inbox"></i>No claims to show yet.</div>
+{% endif %}
+{% endmacro %}
+
+{% macro page_links(p) %}
+{% if p.pages > 1 %}
+<nav aria-label="Pages"><ul class="pagination pagination-sm justify-content-end mb-0">
+  {% for n in p.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+    {% if n %}
+      {% set args = request.args.to_dict() %}{% set _ = args.update({'page': n}) %}
+      <li class="page-item {{ 'active' if n == p.page }}"><a class="page-link" href="{{ url_for(request.endpoint, **args) }}">{{ n }}</a></li>
+    {% else %}<li class="page-item disabled"><span class="page-link">…</span></li>{% endif %}
+  {% endfor %}
+</ul></nav>
+{% endif %}
+{% endmacro %}
+
+{% macro bar_row(label, value, maximum, color='') %}
+<div class="bar-row"><div class="label">{{ label }}</div>
+  <div class="bar-track"><div class="bar-fill" style="width: {{ (value * 100 / maximum)|round|int if maximum else 0 }}%; {{ ('background:' ~ color) if color }}"></div></div>
+  <div class="fw-semibold" style="width:32px">{{ value }}</div></div>
+{% endmacro %}
+
+{% macro timeline(claim) %}
+<ul class="timeline">
+{% for e in claim.history|reverse %}
+  <li>
+    <div>{{ status_badge(e.to_status) }}</div>
+    <div class="small fw-semibold mt-1">{{ e.actor.display_name }}</div>
+    {% if e.note %}<div class="small">{{ e.note }}</div>{% endif %}
+    <div class="when">{{ e.timestamp.strftime('%d %b %Y, %H:%M') }}{% if e.from_status %} · from {{ e.from_status|replace('_',' ') }}{% endif %}</div>
+  </li>
+{% endfor %}
+</ul>
+{% endmacro %}

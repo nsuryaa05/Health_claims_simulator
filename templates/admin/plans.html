@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf with context %}
+{% block title %}Insurance Plans{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Insurance Plan Management</h1><p>Coverage, limits, deductible and co-pay (fictional)</p></div></div>
+<form method="post" action="{{ url_for('admin.save_plan') }}" class="card-box mb-4">{{ csrf() }}
+  <h5>Add plan</h5>
+  <div class="row g-2">
+    <div class="col-md-3"><label class="form-label" for="p_name">Plan name</label><input class="form-control" id="p_name" name="name" required></div>
+    <div class="col-md-3"><label class="form-label" for="p_cov">Covered treatments (comma separated)</label><input class="form-control" id="p_cov" name="covered_treatment_types" placeholder="Surgery,Cardiology" required></div>
+    <div class="col-md-2"><label class="form-label" for="p_lim">Policy amount limit</label><input class="form-control" type="number" step="0.01" id="p_lim" name="policy_amount_limit" required></div>
+    <div class="col-md-2"><label class="form-label" for="p_ded">Deductible</label><input class="form-control" type="number" step="0.01" id="p_ded" name="deductible" required></div>
+    <div class="col-md-1"><label class="form-label" for="p_cop">Co-pay %</label><input class="form-control" type="number" step="0.01" id="p_cop" name="copay_percent" required></div>
+    <div class="col-md-1 d-flex align-items-end"><button class="btn btn-primary w-100">Add</button></div>
+  </div>
+</form>
+<div class="card-box"><div class="table-wrap"><table class="table table-modern">
+  <thead><tr><th>ID</th><th>Name</th><th>Covered treatments</th><th>Policy amount limit</th><th>Deductible</th><th>Co-pay %</th><th></th></tr></thead><tbody>
+  {% for p in plans %}<tr>
+    <td>{{ p.id }}</td>
+    <td><input class="form-control form-control-sm" name="name" value="{{ p.name }}" form="pf{{ p.id }}" aria-label="Name"></td>
+    <td><input class="form-control form-control-sm" name="covered_treatment_types" value="{{ p.treatments|join(',') }}" form="pf{{ p.id }}" aria-label="Treatments"></td>
+    <td><input class="form-control form-control-sm" type="number" step="0.01" name="policy_amount_limit" value="{{ p.annual_limit }}" form="pf{{ p.id }}" aria-label="Policy amount limit"></td>
+    <td><input class="form-control form-control-sm" type="number" step="0.01" name="deductible" value="{{ p.deductible }}" form="pf{{ p.id }}" aria-label="Deductible"></td>
+    <td><input class="form-control form-control-sm" type="number" step="0.01" name="copay_percent" value="{{ p.copay_percent }}" form="pf{{ p.id }}" aria-label="Co-pay"></td>
+    <td class="text-end"><form id="pf{{ p.id }}" method="post" action="{{ url_for('admin.save_plan') }}">{{ csrf() }}<input type="hidden" name="id" value="{{ p.id }}">
+      <button class="btn btn-sm btn-outline-primary">Save</button></form></td></tr>{% endfor %}
+  </tbody></table></div></div>
+{% endblock %}
